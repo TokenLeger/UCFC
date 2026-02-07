@@ -16,8 +16,11 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RAW_DIR = REPO_ROOT / "data_fiscale" / "raw" / "legifrance"
 
 SANDBOX_TOKEN_URL = "https://sandbox-oauth.piste.gouv.fr/api/oauth/token"
+SANDBOX_AUTH_URL = "https://sandbox-oauth.piste.gouv.fr/api/oauth/authorize"
 SANDBOX_API_BASE = "https://sandbox-api.piste.gouv.fr/dila/legifrance/lf-engine-app"
 DEFAULT_SCOPE = "openid"
+DEFAULT_AUTH_FLOW = "client_credentials"
+DEFAULT_TOKEN_CACHE = REPO_ROOT / "data_fiscale" / "auth" / "piste_token.json"
 
 
 @dataclass
@@ -27,6 +30,13 @@ class PisteConfig:
     client_id: str
     client_secret: str
     scope: Optional[str] = None
+    api_key: Optional[str] = None
+    api_key_header: str = "KeyId"
+    auth_url: str = SANDBOX_AUTH_URL
+    auth_flow: str = DEFAULT_AUTH_FLOW
+    redirect_uri: Optional[str] = None
+    token_cache: Optional[Path] = None
+    access_token: Optional[str] = None
 
 
 class PisteClient:
@@ -38,7 +48,7 @@ class PisteClient:
     def _token_valid(self) -> bool:
         return self._token is not None and self._token_expiry is not None and time.time() < self._token_expiry
 
-    def _fetch_token(self) -> str:
+    def _fetch_token_client_credentials(self) -> str:
         data = {
             "grant_type": "client_credentials",
             "client_id": self.config.client_id,
@@ -64,10 +74,43 @@ class PisteClient:
         self._token_expiry = time.time() + max(60, expires_in - 60)
         return access_token
 
+    def _load_access_token(self) -> Optional[str]:
+        if self.config.access_token:
+            self._token = self.config.access_token
+            self._token_expiry = time.time() + 3600
+            return self._token
+        cache = self.config.token_cache
+        if cache and cache.exists():
+            try:
+                data = json.loads(cache.read_text(encoding="utf-8"))
+            except Exception:
+                return None
+            token = data.get("access_token")
+            expires_at = data.get("expires_at")
+            if not token:
+                return None
+            if isinstance(expires_at, (int, float)) and time.time() >= float(expires_at):
+                return None
+            self._token = token
+            if isinstance(expires_at, (int, float)):
+                self._token_expiry = float(expires_at)
+            else:
+                self._token_expiry = time.time() + 3600
+            return self._token
+        return None
+
     def get_token(self) -> str:
         if self._token_valid():
             return self._token  # type: ignore[return-value]
-        return self._fetch_token()
+        if self.config.auth_flow in {"access_code", "authorization_code", "auth_code", "code"}:
+            token = self._load_access_token()
+            if token:
+                return token
+            raise RuntimeError(
+                "Missing access token for accessCode flow. "
+                "Run: pfc_cli.py legifrance-auth --redirect-uri <uri> (then --code <code>)."
+            )
+        return self._fetch_token_client_credentials()
 
     def request_json(
         self,
@@ -95,6 +138,8 @@ class PisteClient:
 
         req = urllib.request.Request(url, data=data, method=method)
         req.add_header("Authorization", f"Bearer {token}")
+        if self.config.api_key:
+            req.add_header(self.config.api_key_header, self.config.api_key)
         req.add_header("Accept", "application/json")
         if method in {"POST", "PUT", "PATCH"}:
             req.add_header("Content-Type", "application/json")
@@ -114,6 +159,52 @@ def save_json(payload: dict, out_path: Path) -> None:
         json.dump(payload, f, ensure_ascii=False, indent=2)
 
 
+def build_authorize_url(config: PisteConfig, state: Optional[str] = None) -> str:
+    if not config.redirect_uri:
+        raise RuntimeError("Missing redirect URI for accessCode flow.")
+    params = {
+        "response_type": "code",
+        "client_id": config.client_id,
+        "redirect_uri": config.redirect_uri,
+    }
+    if config.scope:
+        params["scope"] = config.scope
+    if state:
+        params["state"] = state
+    return f"{config.auth_url}?{urllib.parse.urlencode(params)}"
+
+
+def exchange_code_for_token(config: PisteConfig, code: str) -> dict:
+    if not config.redirect_uri:
+        raise RuntimeError("Missing redirect URI for accessCode flow.")
+    data = {
+        "grant_type": "authorization_code",
+        "code": code,
+        "client_id": config.client_id,
+        "client_secret": config.client_secret,
+        "redirect_uri": config.redirect_uri,
+    }
+    if config.scope:
+        data["scope"] = config.scope
+    payload = urllib.parse.urlencode(data).encode("utf-8")
+    req = urllib.request.Request(config.token_url, data=payload, method="POST")
+    req.add_header("Content-Type", "application/x-www-form-urlencoded")
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        body = resp.read().decode("utf-8")
+    token_data = json.loads(body)
+
+    access_token = token_data.get("access_token")
+    if not access_token:
+        raise RuntimeError("Token exchange missing access_token")
+    expires_in = int(token_data.get("expires_in", 3600))
+    token_data["expires_at"] = time.time() + max(60, expires_in - 60)
+    token_data["obtained_at"] = _utc_now_iso()
+    if config.token_cache:
+        config.token_cache.parent.mkdir(parents=True, exist_ok=True)
+        config.token_cache.write_text(json.dumps(token_data, ensure_ascii=False, indent=2), encoding="utf-8")
+    return token_data
+
+
 def env_config() -> PisteConfig:
     env = os.getenv("PISTE_ENV", "sandbox").strip().lower()
     token_url = os.getenv("PISTE_TOKEN_URL", "").strip()
@@ -121,11 +212,24 @@ def env_config() -> PisteConfig:
     client_id = os.getenv("PISTE_CLIENT_ID", "").strip()
     client_secret = os.getenv("PISTE_CLIENT_SECRET", "").strip()
     scope = os.getenv("PISTE_SCOPE", DEFAULT_SCOPE).strip() or None
+    api_key = os.getenv("PISTE_API_KEY", "").strip() or None
+    api_key_header = os.getenv("PISTE_API_KEY_HEADER", "KeyId").strip() or "KeyId"
+    auth_url = os.getenv("PISTE_AUTH_URL", "").strip()
+    auth_flow = os.getenv("PISTE_AUTH_FLOW", DEFAULT_AUTH_FLOW).strip().lower() or DEFAULT_AUTH_FLOW
+    redirect_uri = os.getenv("PISTE_REDIRECT_URI", "").strip() or None
+    token_cache = os.getenv("PISTE_TOKEN_CACHE", "").strip()
+    access_token = os.getenv("PISTE_ACCESS_TOKEN", "").strip() or None
 
     if not token_url or not api_base:
         if env == "sandbox":
             token_url = SANDBOX_TOKEN_URL
             api_base = SANDBOX_API_BASE
+            if not auth_url:
+                auth_url = SANDBOX_AUTH_URL
+    if not auth_url:
+        auth_url = SANDBOX_AUTH_URL
+    if not token_cache:
+        token_cache = str(DEFAULT_TOKEN_CACHE)
 
     if not all([token_url, api_base, client_id, client_secret]):
         raise RuntimeError(
@@ -139,6 +243,13 @@ def env_config() -> PisteConfig:
         client_id=client_id,
         client_secret=client_secret,
         scope=scope,
+        api_key=api_key,
+        api_key_header=api_key_header,
+        auth_url=auth_url,
+        auth_flow=auth_flow,
+        redirect_uri=redirect_uri,
+        token_cache=Path(token_cache) if token_cache else None,
+        access_token=access_token,
     )
 
 

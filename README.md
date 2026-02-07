@@ -22,6 +22,7 @@ Ce depot contient les bases d'un agent fiscalite francaise et corse en mode "zer
 - Orchestrateur V1 (one-shot): `python3 pfc_cli.py orchestrate-v1 --verbose`
   - Inclut Legifrance, JUDILIBRE, Justice back (PISTE) si autorises
 - Orchestrateur V1 (open data LEGI): `python3 pfc_cli.py orchestrate-v1 --legi-open-data --skip-legifrance --skip-judilibre --skip-justice-back --verbose`
+- PDF inbox -> JSONL: `python3 pfc_cli.py pdf-normalize --verbose` (necessite `pypdf`)
 
 ## Modules
 - `loader/usage_log.py` : journalisation d'usage (qui, quand, IP), sans donnees sensibles.

@@ -8,6 +8,7 @@ Deployer un agent fiscalite FR/Corse en mode "zero hallucination" avec traceabil
 - Acces internet
 - Fichier `.env` rempli si PISTE est utilise
 - (Option ML) un environnement virtuel + dependances ML
+- (Option PDF) `pypdf` pour lire les guides PDF
 
 ## Dossiers importants
 - Donnees brutes: `data_fiscale/raw`
@@ -37,11 +38,20 @@ PISTE_TOKEN_URL=https://sandbox-oauth.piste.gouv.fr/api/oauth/token
 PISTE_SCOPE=openid
 PISTE_CLIENT_ID=your_client_id
 PISTE_CLIENT_SECRET=your_client_secret
+PISTE_AUTH_FLOW=client_credentials
+PISTE_AUTH_URL=https://sandbox-oauth.piste.gouv.fr/api/oauth/authorize
+PISTE_REDIRECT_URI=http://localhost:8787/callback
+PISTE_TOKEN_CACHE=data_fiscale/auth/piste_token.json
+PISTE_ACCESS_TOKEN=
+# Optionnel: certaines APIs (ex: JUDILIBRE) exigent une API Key en header KeyId
+PISTE_API_KEY=your_api_key
+PISTE_API_KEY_HEADER=KeyId
 ```
 
 Notes:
 - Le swagger local est dans `loader/API_docs/`.
 - Si 403: verifier CGU + souscription de l'API dans PISTE.
+- Légifrance utilise le flow OAuth `access_code` (pas `client_credentials`).
 
 ## Commandes essentielles (copier/coller)
 Sur Windows: remplacer `python3` par `py -3`.
@@ -88,7 +98,13 @@ source .venv/bin/activate
 pip install -r requirements-ml.txt
 ```
 
-Construire l'index:
+Construire l'index (recommande CGI + BOFiP):
+```bash
+python3 pfc_cli.py legi-extract-cgi --verbose
+python3 pfc_cli.py qa-index --source bofip --source legi_cgi --batch-size 128 --max-chars 1500 --verbose --log-every 2000 --overwrite
+```
+
+Construire l'index (LEGI complet):
 ```bash
 python3 pfc_cli.py qa-index --source bofip --source legi --batch-size 128 --max-chars 1500 --verbose --log-every 2000 --overwrite
 ```
@@ -104,9 +120,14 @@ Fiches classiques (textes longs):
 python3 pfc_cli.py fiches-build --limit 20 --verbose --max-text-chars 8000
 ```
 
-Fiches avec index ML:
+Fiches avec index ML (structurees: Cadre legal + Doctrine + Extraits cles):
 ```bash
 python3 pfc_cli.py fiches-build --use-vector --vector-index data_fiscale/index/vector --limit 20 --verbose --max-text-chars 8000
+```
+
+Ajuster le volume par section:
+```bash
+python3 pfc_cli.py fiches-build --use-vector --vector-index data_fiscale/index/vector --cadre-limit 10 --doctrine-limit 10 --cles-limit 10 --verbose --max-text-chars 8000
 ```
 
 Texte complet (attention volume):
@@ -117,6 +138,53 @@ python3 pfc_cli.py fiches-build --limit 20 --verbose --max-text-chars 0
 ### 7) Extraction CGI (depuis LEGI JSONL)
 ```bash
 python3 pfc_cli.py legi-extract-cgi --verbose
+```
+
+### 8) Extraire du texte depuis un PDF (guide PISTE)
+Installer:
+```bash
+source .venv/bin/activate
+pip install pypdf
+```
+Extraire:
+```bash
+python3 pfc_cli.py pdf-extract --in loader/API_docs/PISTE-Guide_Utilisateur.pdf --out /tmp/piste_guide.txt --pages 1-5
+```
+
+### 9) Indexer une inbox documents (RAG / ML)
+But: convertir les documents dans `data_fiscale/pdf/ucfc_pdf_inbox/batch_*/` en JSONL (chunks) pour recherche extractive + vectorielle (PDF, DOCX, CSV, XLSX, TXT). Formats `.doc`/`.xls` non supportes (convertir en `.docx`/`.xlsx`/`.csv`).
+
+Telecharger un batch de documents (liste d'URLs ou CSV manifest):
+```bash
+python3 pfc_cli.py pdf-batch --urls /chemin/vers/urls.txt --source "Legifrance/JUDILIBRE" --doc-type jurisprudence --jurisdiction FR --priority high --verbose
+```
+Ou via CSV (avec colonne `url`, optionnellement `title`, `year`, `source`, `doc_type`, `keywords`, `stream`, etc.):
+```bash
+python3 pfc_cli.py pdf-batch --manifest /chemin/vers/manifest.csv --verbose
+```
+Plusieurs streams dans un seul batch (chaque stream peut etre nomme):
+```bash
+python3 pfc_cli.py pdf-batch --manifest cjue=/chemin/cjue.csv --manifest cc=/chemin/cc.csv --urls ce=/chemin/ce_urls.txt --verbose
+```
+Astuce: si `--doc-type` n'est pas fourni, il est infere selon l'extension (dataset pour CSV/XLSX, document pour DOCX/TXT, jurisprudence pour PDF).
+Les colonnes `stream` et `keywords` (si presentes) sont conservees dans les JSONL pour filtrage ou scoring.
+
+Normaliser (ecrit `pdf_inbox.jsonl` dans la derniere version `data_fiscale/processed/<version_id>/normalized/`):
+```bash
+source .venv/bin/activate
+pip install pypdf
+python3 pfc_cli.py pdf-normalize --verbose
+```
+Note: `pypdf` est requis pour les PDFs, pas pour DOCX/CSV/XLSX/TXT.
+
+Indexer (ML):
+```bash
+python3 pfc_cli.py qa-index --source pdf_inbox --batch-size 64 --max-chars 2500 --verbose --overwrite
+```
+
+Rechercher:
+```bash
+python3 pfc_cli.py qa-search-vec --query "TVA" --source pdf_inbox --limit 5
 ```
 
 ## Legifrance (PISTE) - endpoints et appels
@@ -134,6 +202,17 @@ Appel auto-methode via swagger:
 ```bash
 python3 pfc_cli.py legifrance-fetch --path /consult/getArticleWithIdEliOrAlias --body-file /chemin/vers/body.json --out data_fiscale/raw/legifrance --name article
 ```
+
+### OAuth accessCode (Légifrance)
+1) Générer l'URL d'auth:
+```bash
+python3 pfc_cli.py legifrance-auth --redirect-uri http://localhost:8787/callback
+```
+2) Se connecter, récupérer le `code` et échanger:
+```bash
+python3 pfc_cli.py legifrance-auth --redirect-uri http://localhost:8787/callback --code "CODE"
+```
+Ensuite `legifrance-fetch` utilisera le token stocké dans `data_fiscale/auth/piste_token.json`.
 
 ## Endpoints Legifrance V1 (swagger local)
 Source: `loader/API_docs/Legifrance*.json`

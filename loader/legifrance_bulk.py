@@ -43,6 +43,8 @@ def run_plan(
             client_id=config.client_id,
             client_secret=config.client_secret,
             scope=config.scope,
+            api_key=config.api_key,
+            api_key_header=config.api_key_header,
         )
     client = PisteClient(config)
     requests = plan.get("requests", [])

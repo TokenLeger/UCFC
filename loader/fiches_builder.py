@@ -68,6 +68,14 @@ class Theme:
     queries: list[str]
 
 
+@dataclass
+class Section:
+    name: str
+    sources: list[str]
+    hits: list[qa_extractive.ScoredHit]
+    texts: dict[str, str]
+
+
 def _slugify(text: str) -> str:
     text = text.lower().strip()
     text = SLUG_RE.sub("-", text).strip("-")
@@ -155,6 +163,73 @@ def _resolve_source_paths(
     return []
 
 
+def _detect_cgi_source(input_path: Optional[Path], processed_dir: Path) -> str:
+    if _resolve_source_paths("legi_cgi", input_path, processed_dir):
+        return "legi_cgi"
+    return "legi"
+
+
+def _filter_sources(section_sources: list[str], allowlist: list[str]) -> list[str]:
+    if not allowlist:
+        return section_sources
+    allow = {s.strip().lower() for s in allowlist if s.strip()}
+    return [s for s in section_sources if s.lower() in allow]
+
+
+def _run_queries(
+    queries: list[str],
+    sources: list[str],
+    input_path: Optional[Path],
+    processed_dir: Path,
+    use_vector: bool,
+    vector_index: Optional[Path],
+    limit: int,
+    scan_chars: int,
+    snippet_chars: int,
+    agent: str,
+    action: str,
+    no_log: bool,
+    verbose: bool,
+) -> list[qa_extractive.ScoredHit]:
+    all_hits: list[qa_extractive.ScoredHit] = []
+    for query in queries:
+        if verbose:
+            print(f"[fiche] Query: {query}")
+        if not no_log:
+            _log_usage(query, sources, agent, action)
+        if use_vector:
+            try:
+                from loader import qa_vector
+            except Exception as exc:
+                raise SystemExit(
+                    "Vector search requested but dependencies are missing. Install requirements-ml.txt"
+                ) from exc
+            hits = qa_vector.search(
+                query=query,
+                out_dir=vector_index or qa_vector.DEFAULT_INDEX_DIR,
+                limit=limit,
+                chunk_size=50000,
+                snippet_chars=snippet_chars,
+                sources=sources,
+                oversample=20,
+            )
+        else:
+            hits = qa_extractive.search(
+                query=query,
+                input_path=input_path,
+                processed_dir=processed_dir,
+                sources=sources,
+                limit=limit,
+                match="any",
+                scan_chars=scan_chars,
+                snippet_chars=snippet_chars,
+            )
+        if verbose:
+            print(f"[fiche] Hits: {len(hits)}")
+        all_hits.extend(hits)
+    return _merge_hits(all_hits)[:limit]
+
+
 def _hydrate_texts(
     hits: list[qa_extractive.ScoredHit],
     input_path: Optional[Path],
@@ -204,6 +279,9 @@ def build_fiche(
     processed_dir: Path,
     sources: list[str],
     limit: int,
+    cadre_limit: int,
+    doctrine_limit: int,
+    cles_limit: int,
     scan_chars: int,
     snippet_chars: int,
     agent: str,
@@ -213,53 +291,92 @@ def build_fiche(
     use_vector: bool,
     vector_index: Optional[Path],
     max_text_chars: int,
-) -> tuple[str, list[qa_extractive.ScoredHit], dict[str, str]]:
-    all_hits: list[qa_extractive.ScoredHit] = []
+) -> list[Section]:
     if verbose:
         print(f"[fiche] Theme: {theme.title} queries={len(theme.queries)}")
-    for query in theme.queries:
+
+    cgi_source = _detect_cgi_source(input_path, processed_dir)
+    cadre_sources = _filter_sources([cgi_source], sources)
+    doctrine_sources = _filter_sources(["bofip"], sources)
+    cles_sources = _filter_sources(list({*cadre_sources, *doctrine_sources}), sources)
+
+    sections: list[Section] = []
+
+    if cadre_sources:
         if verbose:
-            print(f"[fiche] Query: {query}")
-        if not no_log:
-            _log_usage(query, sources, agent, action)
-        if use_vector:
-            try:
-                from loader import qa_vector
-            except Exception as exc:
-                raise SystemExit(
-                    "Vector search requested but dependencies are missing. Install requirements-ml.txt"
-                ) from exc
-            hits = qa_vector.search(
-                query=query,
-                out_dir=vector_index or qa_vector.DEFAULT_INDEX_DIR,
-                limit=limit,
-                chunk_size=50000,
-                snippet_chars=snippet_chars,
-            )
-        else:
-            hits = qa_extractive.search(
-                query=query,
-                input_path=input_path,
-                processed_dir=processed_dir,
-                sources=sources,
-                limit=limit,
-                match="any",
-                scan_chars=scan_chars,
-                snippet_chars=snippet_chars,
-            )
+            print(f"[fiche] Section: Cadre legal (CGI) sources={cadre_sources}")
+        cadre_hits = _run_queries(
+            queries=theme.queries,
+            sources=cadre_sources,
+            input_path=input_path,
+            processed_dir=processed_dir,
+            use_vector=use_vector,
+            vector_index=vector_index,
+            limit=max(1, cadre_limit),
+            scan_chars=scan_chars,
+            snippet_chars=snippet_chars,
+            agent=agent,
+            action=action,
+            no_log=no_log,
+            verbose=verbose,
+        )
+        cadre_texts = _hydrate_texts(cadre_hits, input_path, processed_dir, max_text_chars, verbose)
+        sections.append(Section(name="Cadre legal (CGI)", sources=cadre_sources, hits=cadre_hits, texts=cadre_texts))
+    elif verbose:
+        print("[fiche] Section: Cadre legal (CGI) skipped (source not available)")
+
+    if doctrine_sources:
         if verbose:
-            print(f"[fiche] Hits: {len(hits)}")
-        all_hits.extend(hits)
-    merged = _merge_hits(all_hits)
-    hits = merged[:limit]
-    texts = _hydrate_texts(hits, input_path, processed_dir, max_text_chars, verbose)
-    return theme.title, hits, texts
+            print(f"[fiche] Section: Doctrine (BOFiP) sources={doctrine_sources}")
+        doctrine_hits = _run_queries(
+            queries=theme.queries,
+            sources=doctrine_sources,
+            input_path=input_path,
+            processed_dir=processed_dir,
+            use_vector=use_vector,
+            vector_index=vector_index,
+            limit=max(1, doctrine_limit),
+            scan_chars=scan_chars,
+            snippet_chars=snippet_chars,
+            agent=agent,
+            action=action,
+            no_log=no_log,
+            verbose=verbose,
+        )
+        doctrine_texts = _hydrate_texts(
+            doctrine_hits, input_path, processed_dir, max_text_chars, verbose
+        )
+        sections.append(Section(name="Doctrine (BOFiP)", sources=doctrine_sources, hits=doctrine_hits, texts=doctrine_texts))
+    elif verbose:
+        print("[fiche] Section: Doctrine (BOFiP) skipped (source not available)")
+
+    if cles_sources:
+        if verbose:
+            print(f"[fiche] Section: Extraits cles sources={cles_sources}")
+        cles_hits = _run_queries(
+            queries=theme.queries,
+            sources=cles_sources,
+            input_path=input_path,
+            processed_dir=processed_dir,
+            use_vector=use_vector,
+            vector_index=vector_index,
+            limit=max(1, cles_limit),
+            scan_chars=scan_chars,
+            snippet_chars=snippet_chars,
+            agent=agent,
+            action=action,
+            no_log=no_log,
+            verbose=verbose,
+        )
+        cles_texts = _hydrate_texts(cles_hits, input_path, processed_dir, max_text_chars, verbose)
+        sections.append(Section(name="Extraits cles", sources=cles_sources, hits=cles_hits, texts=cles_texts))
+
+    return sections
 
 
 def write_markdown(
     theme: Theme,
-    hits: list[qa_extractive.ScoredHit],
-    texts: dict[str, str],
+    sections: list[Section],
     out_path: Path,
     version_id: str,
     generated_at: str,
@@ -273,45 +390,49 @@ def write_markdown(
     lines.append(f"- Queries: {', '.join(theme.queries)}")
     lines.append("")
 
-    if not hits:
+    if not sections:
         lines.append("Je ne sais pas.")
     else:
-        lines.append("## Extraits sources")
-        lines.append("")
-        for idx, hit in enumerate(hits, start=1):
-            lines.append(f"### Source {idx}")
+        for section in sections:
+            lines.append(f"## {section.name}")
             lines.append("")
-            lines.append(f"- Source: {hit.source}")
-            if hit.title:
-                lines.append(f"- Title: {hit.title}")
-            if hit.date:
-                lines.append(f"- Date: {hit.date}")
-            if hit.url:
-                lines.append(f"- URL: {hit.url}")
-            lines.append(f"- Record: {hit.record_id}")
-            lines.append(f"- File: {hit.source_file} (raw_index={hit.raw_index})")
-            full_text = texts.get(hit.record_id, "")
-            if full_text:
+            if not section.hits:
+                lines.append("Je ne sais pas.")
                 lines.append("")
-                lines.append("Texte source:")
-                lines.append("```text")
-                lines.append(full_text)
-                lines.append("```")
-            elif hit.snippet:
+                continue
+            for idx, hit in enumerate(section.hits, start=1):
+                lines.append(f"### Source {idx}")
                 lines.append("")
-                lines.append("Extrait:")
-                lines.append("```text")
-                lines.append(hit.snippet)
-                lines.append("```")
-            lines.append("")
+                lines.append(f"- Source: {hit.source}")
+                if hit.title:
+                    lines.append(f"- Title: {hit.title}")
+                if hit.date:
+                    lines.append(f"- Date: {hit.date}")
+                if hit.url:
+                    lines.append(f"- URL: {hit.url}")
+                lines.append(f"- Record: {hit.record_id}")
+                lines.append(f"- File: {hit.source_file} (raw_index={hit.raw_index})")
+                full_text = section.texts.get(hit.record_id, "")
+                if full_text:
+                    lines.append("")
+                    lines.append("Texte source:")
+                    lines.append("```text")
+                    lines.append(full_text)
+                    lines.append("```")
+                elif hit.snippet:
+                    lines.append("")
+                    lines.append("Extrait:")
+                    lines.append("```text")
+                    lines.append(hit.snippet)
+                    lines.append("```")
+                lines.append("")
 
     out_path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def write_json(
     theme: Theme,
-    hits: list[qa_extractive.ScoredHit],
-    texts: dict[str, str],
+    sections: list[Section],
     out_path: Path,
     version_id: str,
     generated_at: str,
@@ -322,23 +443,30 @@ def write_json(
         "generated_at": generated_at,
         "version": version_id,
         "queries": theme.queries,
-        "hits": [],
+        "sections": [],
     }
-    for hit in hits:
-        payload["hits"].append(
-            {
-                "score": hit.score,
-                "source": hit.source,
-                "record_id": hit.record_id,
-                "title": hit.title,
-                "date": hit.date,
-                "url": hit.url,
-                "source_file": hit.source_file,
-                "raw_index": hit.raw_index,
-                "snippet": hit.snippet,
-                "text": texts.get(hit.record_id, ""),
-            }
-        )
+    for section in sections:
+        entry = {
+            "name": section.name,
+            "sources": section.sources,
+            "hits": [],
+        }
+        for hit in section.hits:
+            entry["hits"].append(
+                {
+                    "score": hit.score,
+                    "source": hit.source,
+                    "record_id": hit.record_id,
+                    "title": hit.title,
+                    "date": hit.date,
+                    "url": hit.url,
+                    "source_file": hit.source_file,
+                    "raw_index": hit.raw_index,
+                    "snippet": hit.snippet,
+                    "text": section.texts.get(hit.record_id, ""),
+                }
+            )
+        payload["sections"].append(entry)
     out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
@@ -360,6 +488,9 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--use-vector", action="store_true")
     parser.add_argument("--vector-index", default="", help="Vector index directory")
     parser.add_argument("--max-text-chars", type=int, default=4000, help="0 = full text")
+    parser.add_argument("--cadre-limit", type=int, default=0)
+    parser.add_argument("--doctrine-limit", type=int, default=0)
+    parser.add_argument("--cles-limit", type=int, default=0)
     args = parser.parse_args(argv)
 
     processed_dir = Path(args.processed)
@@ -372,12 +503,18 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     out_dir = Path(args.out)
     for theme in themes:
-        title, hits, texts = build_fiche(
+        cadre_limit = args.cadre_limit or args.limit
+        doctrine_limit = args.doctrine_limit or args.limit
+        cles_limit = args.cles_limit or args.limit
+        sections = build_fiche(
             theme=theme,
             input_path=input_path,
             processed_dir=processed_dir,
             sources=args.source,
             limit=max(1, args.limit),
+            cadre_limit=max(1, cadre_limit),
+            doctrine_limit=max(1, doctrine_limit),
+            cles_limit=max(1, cles_limit),
             scan_chars=args.scan_chars,
             snippet_chars=args.snippet_chars,
             agent=args.agent,
@@ -388,11 +525,11 @@ def main(argv: Optional[list[str]] = None) -> int:
             vector_index=Path(args.vector_index) if args.vector_index else None,
             max_text_chars=args.max_text_chars,
         )
-        slug = _slugify(theme.slug or title)
+        slug = _slugify(theme.slug or theme.title)
         out_path = out_dir / f"{slug}.md"
-        write_markdown(theme, hits, texts, out_path, version_id, generated_at)
-        write_json(theme, hits, texts, out_path.with_suffix(".json"), version_id, generated_at)
-        print(f"[fiche] {title} -> {out_path}")
+        write_markdown(theme, sections, out_path, version_id, generated_at)
+        write_json(theme, sections, out_path.with_suffix(".json"), version_id, generated_at)
+        print(f"[fiche] {theme.title} -> {out_path}")
 
     return 0
 

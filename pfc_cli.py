@@ -7,7 +7,18 @@ from pathlib import Path
 
 from loader.connectors import bofip_downloader, legifrance_piste, legi_open_data
 from loader.filters import legi_cgi_extract
-from loader import pipeline_ingest, pipeline_v1, orchestrator_v1, qa_extractive, fiches_builder, qa_vector
+from loader import (
+    pipeline_ingest,
+    pipeline_v1,
+    orchestrator_v1,
+    qa_extractive,
+    fiches_builder,
+    qa_vector,
+    pdf_extract,
+    pdf_inbox_normalize,
+    pdf_batch_download,
+    opendata_ja_search,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent
 
@@ -65,6 +76,25 @@ def _cmd_legifrance(args: argparse.Namespace) -> int:
     legifrance_piste.save_json(payload, out_path)
 
     print(f"Saved: {out_path}")
+    return 0
+
+
+def _cmd_legifrance_auth(args: argparse.Namespace) -> int:
+    config = legifrance_piste.env_config()
+    if args.redirect_uri:
+        config.redirect_uri = args.redirect_uri
+    if args.auth_url:
+        config.auth_url = args.auth_url
+    if args.auth_flow:
+        config.auth_flow = args.auth_flow
+    if args.code:
+        token_data = legifrance_piste.exchange_code_for_token(config, args.code)
+        cache_path = config.token_cache if config.token_cache else Path("")
+        print(f"Token saved: {cache_path}")
+        print(f"expires_at: {token_data.get('expires_at')}")
+        return 0
+    url = legifrance_piste.build_authorize_url(config, state=args.state or None)
+    print(url)
     return 0
 
 
@@ -280,6 +310,12 @@ def _cmd_fiches_build(args: argparse.Namespace) -> int:
         argv.extend(["--vector-index", str(args.vector_index)])
     if args.max_text_chars is not None:
         argv.extend(["--max-text-chars", str(args.max_text_chars)])
+    if args.cadre_limit:
+        argv.extend(["--cadre-limit", str(args.cadre_limit)])
+    if args.doctrine_limit:
+        argv.extend(["--doctrine-limit", str(args.doctrine_limit)])
+    if args.cles_limit:
+        argv.extend(["--cles-limit", str(args.cles_limit)])
     if args.no_log:
         argv.append("--no-log")
     if args.verbose:
@@ -325,16 +361,111 @@ def _cmd_qa_search_vec(args: argparse.Namespace) -> int:
         str(args.chunk_size),
         "--snippet-chars",
         str(args.snippet_chars),
+        "--oversample",
+        str(args.oversample),
         "--agent",
         args.agent,
         "--action",
         args.action,
     ]
+    for source in args.source:
+        argv.extend(["--source", source])
     if args.json:
         argv.append("--json")
     if args.no_log:
         argv.append("--no-log")
     return qa_vector.main_search(argv)
+
+
+def _cmd_pdf_extract(args: argparse.Namespace) -> int:
+    argv = [
+        "--in",
+        str(args.input_path),
+        "--pages",
+        args.pages,
+        "--max-chars",
+        str(args.max_chars),
+    ]
+    if args.out:
+        argv.extend(["--out", str(args.out)])
+    if args.verbose:
+        argv.append("--verbose")
+    return pdf_extract.main(argv)
+
+
+def _cmd_pdf_normalize(args: argparse.Namespace) -> int:
+    argv = [
+        "--inbox",
+        str(args.inbox),
+        "--processed",
+        str(args.processed),
+        "--chunk-chars",
+        str(args.chunk_chars),
+        "--max-pages",
+        str(args.max_pages),
+    ]
+    if args.out:
+        argv.extend(["--out", str(args.out)])
+    if args.verbose:
+        argv.append("--verbose")
+    return pdf_inbox_normalize.main(argv)
+
+
+def _cmd_pdf_batch(args: argparse.Namespace) -> int:
+    argv: list[str] = []
+    for item in args.manifest:
+        argv += ["--manifest", str(item)]
+    for item in args.urls:
+        argv += ["--urls", str(item)]
+    if args.inbox:
+        argv += ["--inbox", str(args.inbox)]
+    if args.batch:
+        argv += ["--batch", args.batch]
+    if args.doc_type:
+        argv += ["--doc-type", args.doc_type]
+    if args.jurisdiction:
+        argv += ["--jurisdiction", args.jurisdiction]
+    if args.source:
+        argv += ["--source", args.source]
+    if args.priority:
+        argv += ["--priority", args.priority]
+    if args.notes:
+        argv += ["--notes", args.notes]
+    if args.limit:
+        argv += ["--limit", str(args.limit)]
+    if args.overwrite:
+        argv.append("--overwrite")
+    if args.timeout:
+        argv += ["--timeout", str(args.timeout)]
+    if args.sleep:
+        argv += ["--sleep", str(args.sleep)]
+    if args.verbose:
+        argv.append("--verbose")
+    return pdf_batch_download.main(argv)
+
+
+def _cmd_opendata_urls(args: argparse.Namespace) -> int:
+    argv: list[str] = [
+        "--query",
+        args.query,
+        "--jurisdiction",
+        args.jurisdiction,
+        "--limit",
+        str(args.limit),
+        "--format",
+        args.format,
+    ]
+    if args.out:
+        argv += ["--out", str(args.out)]
+    if args.source:
+        argv += ["--source", args.source]
+    if args.doc_type:
+        argv += ["--doc-type", args.doc_type]
+    if args.jurisdiction_label:
+        argv += ["--jurisdiction-label", args.jurisdiction_label]
+    if args.verbose:
+        argv.append("--verbose")
+    return opendata_ja_search.main(argv)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -364,6 +495,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_legifrance.add_argument("--spec", default="", help="Path to Legifrance swagger JSON")
     p_legifrance.add_argument("--verbose", action="store_true", help="Verbose progress logs")
     p_legifrance.set_defaults(func=_cmd_legifrance)
+
+    p_legiauth = sub.add_parser("legifrance-auth", help="OAuth accessCode helper (Legifrance)")
+    p_legiauth.add_argument("--redirect-uri", default="", help="Redirect URI configured in PISTE")
+    p_legiauth.add_argument("--auth-url", default="", help="Override OAuth authorize URL")
+    p_legiauth.add_argument("--auth-flow", default="", help="Force auth flow (access_code)")
+    p_legiauth.add_argument("--state", default="", help="Optional state parameter")
+    p_legiauth.add_argument("--code", default="", help="Authorization code to exchange")
+    p_legiauth.set_defaults(func=_cmd_legifrance_auth)
 
     p_legi_paths = sub.add_parser("legifrance-list-paths", help="List Legifrance endpoints (swagger)")
     p_legi_paths.add_argument("--spec", default="", help="Path to Legifrance swagger JSON")
@@ -464,6 +603,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_fiches.add_argument("--use-vector", action="store_true")
     p_fiches.add_argument("--vector-index", default="", type=Path)
     p_fiches.add_argument("--max-text-chars", type=int, default=4000)
+    p_fiches.add_argument("--cadre-limit", type=int, default=0)
+    p_fiches.add_argument("--doctrine-limit", type=int, default=0)
+    p_fiches.add_argument("--cles-limit", type=int, default=0)
     p_fiches.set_defaults(func=_cmd_fiches_build)
 
     p_qindex = sub.add_parser("qa-index", help="Build vector index (ML)")
@@ -485,11 +627,81 @@ def build_parser() -> argparse.ArgumentParser:
     p_qsearch.add_argument("--limit", type=int, default=5)
     p_qsearch.add_argument("--chunk-size", type=int, default=50000)
     p_qsearch.add_argument("--snippet-chars", type=int, default=240)
+    p_qsearch.add_argument("--source", action="append", default=[])
+    p_qsearch.add_argument("--oversample", type=int, default=20)
     p_qsearch.add_argument("--json", action="store_true")
     p_qsearch.add_argument("--agent", default="ucfc_cli")
     p_qsearch.add_argument("--action", default="qa_vector_search")
     p_qsearch.add_argument("--no-log", action="store_true")
     p_qsearch.set_defaults(func=_cmd_qa_search_vec)
+
+    p_pdf = sub.add_parser("pdf-extract", help="Extraire le texte d'un PDF")
+    p_pdf.add_argument("--in", dest="input_path", required=True, help="Chemin PDF")
+    p_pdf.add_argument("--out", default="", help="Fichier texte de sortie (optionnel)")
+    p_pdf.add_argument("--pages", default="", help='Pages (ex: "1-3,5")')
+    p_pdf.add_argument("--max-chars", type=int, default=0, help="Max chars par page (0 = full)")
+    p_pdf.add_argument("--verbose", action="store_true")
+    p_pdf.set_defaults(func=_cmd_pdf_extract)
+
+    p_pdf_norm = sub.add_parser(
+        "pdf-normalize",
+        help="Normaliser l'inbox UCFC (PDF/DOCX/CSV/XLSX/TXT) en JSONL (chunks)",
+    )
+    p_pdf_norm.add_argument("--inbox", default=pdf_inbox_normalize.DEFAULT_INBOX_DIR, type=Path)
+    p_pdf_norm.add_argument("--processed", default=pdf_inbox_normalize.DEFAULT_PROCESSED_DIR, type=Path)
+    p_pdf_norm.add_argument("--out", default="", help="Chemin JSONL de sortie (par defaut: latest processed)")
+    p_pdf_norm.add_argument("--chunk-chars", type=int, default=6000)
+    p_pdf_norm.add_argument("--max-pages", type=int, default=0)
+    p_pdf_norm.add_argument("--verbose", action="store_true")
+    p_pdf_norm.set_defaults(func=_cmd_pdf_normalize)
+
+    p_pdf_batch = sub.add_parser(
+        "pdf-batch",
+        help=(
+            "Telecharger un batch de documents (PDF/DOCX/CSV/XLSX/TXT) "
+            "dans data_fiscale/pdf/ucfc_pdf_inbox"
+        ),
+    )
+    p_pdf_batch.add_argument(
+        "--manifest",
+        action="append",
+        default=[],
+        help="CSV avec une colonne 'url' (repeatable, optionnellement name=path)",
+    )
+    p_pdf_batch.add_argument(
+        "--urls",
+        action="append",
+        default=[],
+        help="Fichier texte: une URL par ligne (repeatable, optionnellement name=path)",
+    )
+    p_pdf_batch.add_argument("--inbox", default=pdf_batch_download.DEFAULT_INBOX_DIR, type=Path)
+    p_pdf_batch.add_argument("--batch", default="", help="Nom de batch (ex: batch_003)")
+    p_pdf_batch.add_argument("--doc-type", dest="doc_type", default="")
+    p_pdf_batch.add_argument("--jurisdiction", default="")
+    p_pdf_batch.add_argument("--source", default="")
+    p_pdf_batch.add_argument("--priority", default="medium")
+    p_pdf_batch.add_argument("--notes", default="")
+    p_pdf_batch.add_argument("--limit", type=int, default=0)
+    p_pdf_batch.add_argument("--overwrite", action="store_true")
+    p_pdf_batch.add_argument("--timeout", type=int, default=60)
+    p_pdf_batch.add_argument("--sleep", type=float, default=0.0)
+    p_pdf_batch.add_argument("--verbose", action="store_true")
+    p_pdf_batch.set_defaults(func=_cmd_pdf_batch)
+
+    p_ja = sub.add_parser(
+        "opendata-urls",
+        help="Exporter des URLs (shareFile PDF) depuis Open Data Justice administrative",
+    )
+    p_ja.add_argument("--query", required=True, help="Mot-cle (ex: TVA)")
+    p_ja.add_argument("--jurisdiction", default="CE", help="Code juridiction (ex: CE)")
+    p_ja.add_argument("--limit", type=int, default=100)
+    p_ja.add_argument("--format", choices=["urls", "csv"], default="urls")
+    p_ja.add_argument("--out", default="", help="Fichier de sortie (optionnel)")
+    p_ja.add_argument("--source", default=opendata_ja_search.DEFAULT_SOURCE)
+    p_ja.add_argument("--doc-type", dest="doc_type", default="jurisprudence")
+    p_ja.add_argument("--jurisdiction-label", default="FR")
+    p_ja.add_argument("--verbose", action="store_true")
+    p_ja.set_defaults(func=_cmd_opendata_urls)
 
     return parser
 

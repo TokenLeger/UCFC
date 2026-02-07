@@ -327,6 +327,8 @@ def search(
     limit: int,
     chunk_size: int,
     snippet_chars: int,
+    sources: Optional[list[str]] = None,
+    oversample: int = 20,
 ) -> list[ScoredHit]:
     config, emb, meta_path = _load_index(out_dir)
     model = _load_model(config.get("model") or "sentence-transformers/all-MiniLM-L6-v2")
@@ -334,17 +336,21 @@ def search(
 
     top_scores: list[tuple[float, int]] = []
     total = emb.shape[0]
+    source_set = {s.strip().lower() for s in (sources or []) if s.strip()}
+    candidate_limit = limit
+    if source_set:
+        candidate_limit = min(total, max(limit, limit * max(1, oversample)))
 
     for start in range(0, total, chunk_size):
         end = min(total, start + chunk_size)
         scores = emb[start:end] @ qvec
         if scores.size == 0:
             continue
-        if len(top_scores) < limit:
+        if len(top_scores) < candidate_limit:
             for i, score in enumerate(scores):
                 top_scores.append((float(score), start + i))
             top_scores.sort(key=lambda x: x[0], reverse=True)
-            top_scores = top_scores[:limit]
+            top_scores = top_scores[:candidate_limit]
         else:
             for i, score in enumerate(scores):
                 score = float(score)
@@ -352,13 +358,12 @@ def search(
                     continue
                 top_scores.append((score, start + i))
                 top_scores.sort(key=lambda x: x[0], reverse=True)
-                top_scores = top_scores[:limit]
+                top_scores = top_scores[:candidate_limit]
 
     if not top_scores:
         return []
 
     ids = [idx + 1 for _, idx in top_scores]
-    id_set = set(ids)
     hits: list[ScoredHit] = []
     with sqlite3.connect(meta_path) as conn:
         cursor = conn.execute(
@@ -373,6 +378,8 @@ def search(
         if not row:
             continue
         _, source, record_id, title, date, url, source_file, raw_index, text_excerpt = row
+        if source_set and (source or "").lower() not in source_set:
+            continue
         snippet = _snippet(text_excerpt or "", snippet_chars)
         hits.append(
             ScoredHit(
@@ -387,6 +394,8 @@ def search(
                 snippet=snippet,
             )
         )
+        if len(hits) >= limit:
+            break
 
     return hits
 
@@ -431,6 +440,8 @@ def main_search(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--limit", type=int, default=5)
     parser.add_argument("--chunk-size", type=int, default=50000)
     parser.add_argument("--snippet-chars", type=int, default=240)
+    parser.add_argument("--source", action="append", default=[])
+    parser.add_argument("--oversample", type=int, default=20)
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--agent", default="ucfc_cli")
     parser.add_argument("--action", default="qa_vector_search")
@@ -446,6 +457,8 @@ def main_search(argv: Optional[list[str]] = None) -> int:
         limit=max(1, args.limit),
         chunk_size=max(1000, args.chunk_size),
         snippet_chars=max(0, args.snippet_chars),
+        sources=args.source,
+        oversample=max(1, args.oversample),
     )
 
     if not hits:

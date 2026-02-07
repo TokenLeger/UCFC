@@ -5,6 +5,7 @@
 /data_fiscale/raw/
 /data_fiscale/processed/
 /data_fiscale/index/
+/data_fiscale/auth/
 /data_fiscale/usage_log.sqlite3
 /fiches/
 
