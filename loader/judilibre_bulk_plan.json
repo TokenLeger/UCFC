@@ -1,0 +1,65 @@
+{
+  "api_base": "https://sandbox-api.piste.gouv.fr/cassation/judilibre/v1.0",
+  "source": "loader/API_docs/JUDILIBRE.json",
+  "note": "Auto-generated from swagger. Endpoints with required params are disabled by default.",
+  "requests": [
+    {
+      "path": "/decision",
+      "method": "GET",
+      "enabled": false,
+      "name": "decision",
+      "out_dir": "judilibre",
+      "note": "requires params: id"
+    },
+    {
+      "path": "/export",
+      "method": "GET",
+      "enabled": true,
+      "name": "export",
+      "out_dir": "judilibre"
+    },
+    {
+      "path": "/healthcheck",
+      "method": "GET",
+      "enabled": true,
+      "name": "healthcheck",
+      "out_dir": "judilibre"
+    },
+    {
+      "path": "/scan",
+      "method": "GET",
+      "enabled": true,
+      "name": "scan",
+      "out_dir": "judilibre"
+    },
+    {
+      "path": "/search",
+      "method": "GET",
+      "enabled": true,
+      "name": "search",
+      "out_dir": "judilibre"
+    },
+    {
+      "path": "/stats",
+      "method": "GET",
+      "enabled": true,
+      "name": "stats",
+      "out_dir": "judilibre"
+    },
+    {
+      "path": "/taxonomy",
+      "method": "GET",
+      "enabled": true,
+      "name": "taxonomy",
+      "out_dir": "judilibre"
+    },
+    {
+      "path": "/transactionalhistory",
+      "method": "GET",
+      "enabled": false,
+      "name": "transactionalhistory",
+      "out_dir": "judilibre",
+      "note": "requires params: date"
+    }
+  ]
+}

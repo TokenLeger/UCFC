@@ -1,0 +1,640 @@
+{
+  "source": "loader/API_docs/Légifrance.json",
+  "note": "Auto-generated from swagger. Enable/adjust bodies as needed.",
+  "requests": [
+    {
+      "path": "/chrono/ping",
+      "method": "GET",
+      "enabled": true,
+      "name": "chrono_ping",
+      "out_dir": "chrono"
+    },
+    {
+      "path": "/chrono/textCid",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "chrono_textCid",
+      "out_dir": "chrono"
+    },
+    {
+      "path": "/chrono/textCid/{textCid}",
+      "method": "GET",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "chrono_textCid_{textCid}",
+      "out_dir": "chrono"
+    },
+    {
+      "path": "/chrono/textCidAndElementCid",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "chrono_textCidAndElementCid",
+      "out_dir": "chrono"
+    },
+    {
+      "path": "/consult/acco",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_acco",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/circulaire",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_circulaire",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/cnil",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_cnil",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/code",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_code",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/code/tableMatieres",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_code_tableMatieres",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/concordanceLinksArticle",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_concordanceLinksArticle",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/debat",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_debat",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/dossierLegislatif",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_dossierLegislatif",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/eliAndAliasRedirectionTexte",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_eliAndAliasRedirectionTexte",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/getArticle",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_getArticle",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/getArticleByCid",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_getArticleByCid",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/getArticleWithIdAndNum",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_getArticleWithIdAndNum",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/getArticleWithIdEliOrAlias",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_getArticleWithIdEliOrAlias",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/getBoccTextPdfMetadata",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_getBoccTextPdfMetadata",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/getCnilWithAncienId",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_getCnilWithAncienId",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/getCodeWithAncienId",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_getCodeWithAncienId",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/getJoWithNor",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_getJoWithNor",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/getJuriPlanClassement",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_getJuriPlanClassement",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/getJuriWithAncienId",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_getJuriWithAncienId",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/getSectionByCid",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_getSectionByCid",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/getTables",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_getTables",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/hasServicePublicLinksArticle",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_hasServicePublicLinksArticle",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/jorf",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_jorf",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/jorfCont",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_jorfCont",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/jorfPart",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_jorfPart",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/juri",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_juri",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/kaliArticle",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_kaliArticle",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/kaliCont",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_kaliCont",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/kaliContIdcc",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_kaliContIdcc",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/kaliSection",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_kaliSection",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/kaliText",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_kaliText",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/lastNJo",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_lastNJo",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/lawDecree",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_lawDecree",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/legi/tableMatieres",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_legi_tableMatieres",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/legiPart",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_legiPart",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/ping",
+      "method": "GET",
+      "enabled": true,
+      "name": "consult_ping",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/relatedLinksArticle",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_relatedLinksArticle",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/sameNumArticle",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_sameNumArticle",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/consult/servicePublicLinksArticle",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "consult_servicePublicLinksArticle",
+      "out_dir": "consult"
+    },
+    {
+      "path": "/list/bocc",
+      "method": "POST",
+      "enabled": true,
+      "body": {
+        "pageNumber": 1,
+        "pageSize": 100
+      },
+      "paginate": {
+        "pageParam": "pageNumber",
+        "pageSizeParam": "pageSize",
+        "start": 1,
+        "maxPages": 5,
+        "pageSize": 100,
+        "stopOnEmpty": true
+      },
+      "name": "list_bocc",
+      "out_dir": "list/bocc"
+    },
+    {
+      "path": "/list/boccTexts",
+      "method": "POST",
+      "enabled": true,
+      "body": {
+        "pageNumber": 1,
+        "pageSize": 100
+      },
+      "paginate": {
+        "pageParam": "pageNumber",
+        "pageSizeParam": "pageSize",
+        "start": 1,
+        "maxPages": 5,
+        "pageSize": 100,
+        "stopOnEmpty": true
+      },
+      "name": "list_boccTexts",
+      "out_dir": "list/boccTexts"
+    },
+    {
+      "path": "/list/boccsAndTexts",
+      "method": "POST",
+      "enabled": true,
+      "body": {
+        "pageNumber": 1,
+        "pageSize": 100
+      },
+      "paginate": {
+        "pageParam": "pageNumber",
+        "pageSizeParam": "pageSize",
+        "start": 1,
+        "maxPages": 5,
+        "pageSize": 100,
+        "stopOnEmpty": true
+      },
+      "name": "list_boccsAndTexts",
+      "out_dir": "list/boccsAndTexts"
+    },
+    {
+      "path": "/list/bodmr",
+      "method": "POST",
+      "enabled": true,
+      "body": {
+        "pageNumber": 1,
+        "pageSize": 100
+      },
+      "paginate": {
+        "pageParam": "pageNumber",
+        "pageSizeParam": "pageSize",
+        "start": 1,
+        "maxPages": 5,
+        "pageSize": 100,
+        "stopOnEmpty": true
+      },
+      "name": "list_bodmr",
+      "out_dir": "list/bodmr"
+    },
+    {
+      "path": "/list/code",
+      "method": "POST",
+      "enabled": true,
+      "body": {
+        "pageNumber": 1,
+        "pageSize": 100
+      },
+      "paginate": {
+        "pageParam": "pageNumber",
+        "pageSizeParam": "pageSize",
+        "start": 1,
+        "maxPages": 5,
+        "pageSize": 100,
+        "stopOnEmpty": true
+      },
+      "name": "list_code",
+      "out_dir": "list/code"
+    },
+    {
+      "path": "/list/conventions",
+      "method": "POST",
+      "enabled": true,
+      "body": {
+        "pageNumber": 1,
+        "pageSize": 100
+      },
+      "paginate": {
+        "pageParam": "pageNumber",
+        "pageSizeParam": "pageSize",
+        "start": 1,
+        "maxPages": 5,
+        "pageSize": 100,
+        "stopOnEmpty": true
+      },
+      "name": "list_conventions",
+      "out_dir": "list/conventions"
+    },
+    {
+      "path": "/list/debatsParlementaires",
+      "method": "POST",
+      "enabled": true,
+      "body": {
+        "pageNumber": 1,
+        "pageSize": 100
+      },
+      "paginate": {
+        "pageParam": "pageNumber",
+        "pageSizeParam": "pageSize",
+        "start": 1,
+        "maxPages": 5,
+        "pageSize": 100,
+        "stopOnEmpty": true
+      },
+      "name": "list_debatsParlementaires",
+      "out_dir": "list/debatsParlementaires"
+    },
+    {
+      "path": "/list/docsAdmins",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires specific body fields",
+      "name": "list_docsAdmins",
+      "out_dir": "list/docsAdmins"
+    },
+    {
+      "path": "/list/dossiersLegislatifs",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires specific body fields",
+      "name": "list_dossiersLegislatifs",
+      "out_dir": "list/dossiersLegislatifs"
+    },
+    {
+      "path": "/list/legislatures",
+      "method": "POST",
+      "enabled": true,
+      "name": "list_legislatures",
+      "out_dir": "list/legislatures"
+    },
+    {
+      "path": "/list/loda",
+      "method": "POST",
+      "enabled": true,
+      "body": {
+        "pageNumber": 1,
+        "pageSize": 100
+      },
+      "paginate": {
+        "pageParam": "pageNumber",
+        "pageSizeParam": "pageSize",
+        "start": 1,
+        "maxPages": 5,
+        "pageSize": 100,
+        "stopOnEmpty": true
+      },
+      "name": "list_loda",
+      "out_dir": "list/loda"
+    },
+    {
+      "path": "/list/ping",
+      "method": "GET",
+      "enabled": true,
+      "name": "list_ping",
+      "out_dir": "list/ping"
+    },
+    {
+      "path": "/list/questionsEcritesParlementaires",
+      "method": "POST",
+      "enabled": true,
+      "body": {
+        "pageNumber": 1,
+        "pageSize": 100
+      },
+      "paginate": {
+        "pageParam": "pageNumber",
+        "pageSizeParam": "pageSize",
+        "start": 1,
+        "maxPages": 5,
+        "pageSize": 100,
+        "stopOnEmpty": true
+      },
+      "name": "list_questionsEcritesParlementaires",
+      "out_dir": "list/questionsEcritesParlementaires"
+    },
+    {
+      "path": "/misc/commitId",
+      "method": "GET",
+      "enabled": true,
+      "name": "misc_commitId",
+      "out_dir": "misc"
+    },
+    {
+      "path": "/misc/datesWithoutJo",
+      "method": "GET",
+      "enabled": true,
+      "name": "misc_datesWithoutJo",
+      "out_dir": "misc"
+    },
+    {
+      "path": "/misc/yearsWithoutTable",
+      "method": "GET",
+      "enabled": true,
+      "name": "misc_yearsWithoutTable",
+      "out_dir": "misc"
+    },
+    {
+      "path": "/search",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "search",
+      "out_dir": "search"
+    },
+    {
+      "path": "/search/canonicalArticleVersion",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "search_canonicalArticleVersion",
+      "out_dir": "search"
+    },
+    {
+      "path": "/search/canonicalVersion",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "search_canonicalVersion",
+      "out_dir": "search"
+    },
+    {
+      "path": "/search/nearestVersion",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "search_nearestVersion",
+      "out_dir": "search"
+    },
+    {
+      "path": "/search/ping",
+      "method": "GET",
+      "enabled": true,
+      "name": "search_ping",
+      "out_dir": "search"
+    },
+    {
+      "path": "/suggest",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "suggest",
+      "out_dir": "suggest"
+    },
+    {
+      "path": "/suggest/acco",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "suggest_acco",
+      "out_dir": "suggest"
+    },
+    {
+      "path": "/suggest/pdc",
+      "method": "POST",
+      "enabled": false,
+      "note": "requires identifiers or specific body",
+      "name": "suggest_pdc",
+      "out_dir": "suggest"
+    },
+    {
+      "path": "/suggest/ping",
+      "method": "GET",
+      "enabled": true,
+      "name": "suggest_ping",
+      "out_dir": "suggest"
+    }
+  ]
+}

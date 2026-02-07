@@ -1,0 +1,210 @@
+{
+  "api_base": "https://sandbox-api.piste.gouv.fr/minju/v1/Justiceback",
+  "source": "loader/API_docs/Justice back.json",
+  "note": "Auto-generated from swagger. Entity-specific endpoints are disabled by default.",
+  "requests": [
+    {
+      "path": "/node/carto_mon_besoin",
+      "method": "GET",
+      "enabled": true,
+      "name": "node_carto_mon_besoin",
+      "out_dir": "justice_back"
+    },
+    {
+      "path": "/node/carto_mon_besoin/{entity}",
+      "method": "GET",
+      "enabled": false,
+      "name": "node_carto_mon_besoin_entity",
+      "out_dir": "justice_back",
+      "note": "requires params: entity"
+    },
+    {
+      "path": "/node/commune",
+      "method": "GET",
+      "enabled": true,
+      "name": "node_commune",
+      "out_dir": "justice_back"
+    },
+    {
+      "path": "/node/commune/{entity}",
+      "method": "GET",
+      "enabled": false,
+      "name": "node_commune_entity",
+      "out_dir": "justice_back",
+      "note": "requires params: entity"
+    },
+    {
+      "path": "/node/constante_simulateur",
+      "method": "GET",
+      "enabled": true,
+      "name": "node_constante_simulateur",
+      "out_dir": "justice_back"
+    },
+    {
+      "path": "/node/constante_simulateur/{entity}",
+      "method": "GET",
+      "enabled": false,
+      "name": "node_constante_simulateur_entity",
+      "out_dir": "justice_back",
+      "note": "requires params: entity"
+    },
+    {
+      "path": "/node/fiche_dila",
+      "method": "GET",
+      "enabled": true,
+      "name": "node_fiche_dila",
+      "out_dir": "justice_back"
+    },
+    {
+      "path": "/node/fiche_dila/{entity}",
+      "method": "GET",
+      "enabled": false,
+      "name": "node_fiche_dila_entity",
+      "out_dir": "justice_back",
+      "note": "requires params: entity"
+    },
+    {
+      "path": "/node/focuson_article",
+      "method": "GET",
+      "enabled": true,
+      "name": "node_focuson_article",
+      "out_dir": "justice_back"
+    },
+    {
+      "path": "/node/focuson_article/{entity}",
+      "method": "GET",
+      "enabled": false,
+      "name": "node_focuson_article_entity",
+      "out_dir": "justice_back",
+      "note": "requires params: entity"
+    },
+    {
+      "path": "/node/lieu_de_justice",
+      "method": "GET",
+      "enabled": true,
+      "name": "node_lieu_de_justice",
+      "out_dir": "justice_back"
+    },
+    {
+      "path": "/node/lieu_de_justice/{entity}",
+      "method": "GET",
+      "enabled": false,
+      "name": "node_lieu_de_justice_entity",
+      "out_dir": "justice_back",
+      "note": "requires params: entity"
+    },
+    {
+      "path": "/node/lieu_de_justice/{entity}/field_ldj_type_organisme",
+      "method": "GET",
+      "enabled": false,
+      "name": "node_lieu_de_justice_entity_field_ldj_type_organisme",
+      "out_dir": "justice_back",
+      "note": "requires params: entity"
+    },
+    {
+      "path": "/node/miscellaneous",
+      "method": "GET",
+      "enabled": true,
+      "name": "node_miscellaneous",
+      "out_dir": "justice_back"
+    },
+    {
+      "path": "/node/miscellaneous/{entity}",
+      "method": "GET",
+      "enabled": false,
+      "name": "node_miscellaneous_entity",
+      "out_dir": "justice_back",
+      "note": "requires params: entity"
+    },
+    {
+      "path": "/node/numero_utile",
+      "method": "GET",
+      "enabled": true,
+      "name": "node_numero_utile",
+      "out_dir": "justice_back"
+    },
+    {
+      "path": "/node/numero_utile/{entity}",
+      "method": "GET",
+      "enabled": false,
+      "name": "node_numero_utile_entity",
+      "out_dir": "justice_back",
+      "note": "requires params: entity"
+    },
+    {
+      "path": "/node/sim_pension_alimentaire",
+      "method": "GET",
+      "enabled": true,
+      "name": "node_sim_pension_alimentaire",
+      "out_dir": "justice_back"
+    },
+    {
+      "path": "/node/sim_pension_alimentaire/{entity}",
+      "method": "GET",
+      "enabled": false,
+      "name": "node_sim_pension_alimentaire_entity",
+      "out_dir": "justice_back",
+      "note": "requires params: entity"
+    },
+    {
+      "path": "/node/simulateur_aide_juridique",
+      "method": "GET",
+      "enabled": true,
+      "name": "node_simulateur_aide_juridique",
+      "out_dir": "justice_back"
+    },
+    {
+      "path": "/node/simulateur_aide_juridique/{entity}",
+      "method": "GET",
+      "enabled": false,
+      "name": "node_simulateur_aide_juridique_entity",
+      "out_dir": "justice_back",
+      "note": "requires params: entity"
+    },
+    {
+      "path": "/node/simulateur_saisie_salaire",
+      "method": "GET",
+      "enabled": true,
+      "name": "node_simulateur_saisie_salaire",
+      "out_dir": "justice_back"
+    },
+    {
+      "path": "/node/simulateur_saisie_salaire/{entity}",
+      "method": "GET",
+      "enabled": false,
+      "name": "node_simulateur_saisie_salaire_entity",
+      "out_dir": "justice_back",
+      "note": "requires params: entity"
+    },
+    {
+      "path": "/node/websitelink",
+      "method": "GET",
+      "enabled": true,
+      "name": "node_websitelink",
+      "out_dir": "justice_back"
+    },
+    {
+      "path": "/node/websitelink/{entity}",
+      "method": "GET",
+      "enabled": false,
+      "name": "node_websitelink_entity",
+      "out_dir": "justice_back",
+      "note": "requires params: entity"
+    },
+    {
+      "path": "/taxonomy_term/type_organisme",
+      "method": "GET",
+      "enabled": true,
+      "name": "taxonomy_term_type_organisme",
+      "out_dir": "justice_back"
+    },
+    {
+      "path": "/taxonomy_term/type_organisme/{entity}",
+      "method": "GET",
+      "enabled": false,
+      "name": "taxonomy_term_type_organisme_entity",
+      "out_dir": "justice_back",
+      "note": "requires params: entity"
+    }
+  ]
+}

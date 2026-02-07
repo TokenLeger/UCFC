@@ -1,0 +1,45 @@
+flowchart LR
+  subgraph Sources
+    A["CGI (Legifrance)"]
+    B["BOFiP (data.gouv.fr)"]
+    C["Jurisprudence (CE/CAA/Cass.)"]
+    D["Autres sources publiques (v2)"]
+  end
+
+  subgraph Ingestion
+    E["Connecteurs HTML/XML/PDF"]
+    F["OCR si besoin"]
+    G["Normalisation + Metadonnees"]
+  end
+
+  subgraph Stockage
+    H["Raw store (immutable)"]
+    I["DB metadonnees (Postgres)" ]
+  end
+
+  subgraph Indexation
+    J["Index lexical"]
+    K["Index vectoriel"]
+    L["Graphe de references"]
+  end
+
+  subgraph Service
+    M["API/CLI"]
+    N["Moteur de reponse extractif"]
+    O["Citations + Audit"]
+  end
+
+  A --> E
+  B --> E
+  C --> E
+  D --> E
+  E --> F --> G
+  G --> H
+  G --> I
+  I --> J
+  I --> K
+  I --> L
+  J --> N
+  K --> N
+  L --> N
+  N --> O --> M

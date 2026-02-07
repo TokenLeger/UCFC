@@ -1,0 +1,106 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "description" : "API DUME Metadonnees. \n\nLa description des API DUME est disponible sur la [communauté Chorus Pro](https://communaute.chorus-pro.gouv.fr/documentation/dume-presentation-des-api-a-destination-des-profils-dacheteur/).'",
+    "version" : "1.0.0",
+    "title" : "DUME Métadonnées"
+  },
+  "host" : "sandbox-api.piste.gouv.fr",
+  "basePath" : "/qlf/dume/metadonnees",
+  "tags" : [ {
+    "name" : "dume-resources",
+    "description" : "DUME API"
+  } ],
+  "schemes" : [ "https", "http" ],
+  "security" : [ {
+    "SecurityProfile.OAuthApplication" : [ "openid" ]
+  } ],
+  "paths" : {
+    "/" : {
+      "post" : {
+        "tags" : [ "dume-resources" ],
+        "summary" : "traitement domaine métadonnées",
+        "operationId" : "traitement",
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json;charset=UTF-8" ],
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "request",
+          "description" : "request",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/definitions/MinimalRequest"
+          }
+        }, {
+          "name" : "X-Api-Version",
+          "in" : "header",
+          "description" : "X-Api-Version (1 ou 2)",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "SecurityProfile.OAuthApplication" : {
+      "description" : "OAuth",
+      "type" : "oauth2",
+      "tokenUrl" : "https://sandbox-oauth.piste.gouv.fr/api/oauth/token",
+      "flow" : "application",
+      "scopes" : {
+        "openid" : ""
+      }
+    }
+  },
+  "definitions" : {
+    "typeIdTechniquePlateforme" : {
+      "type" : "string",
+      "minLength" : 6,
+      "maxLength" : 6
+    },
+    "MinimalRequest" : {
+      "type" : "object",
+      "required" : [ "operation" ],
+      "discriminator" : "operation",
+      "properties" : {
+        "operation" : {
+          "type" : "string"
+        }
+      }
+    },
+    "service" : {
+      "type" : "string",
+      "enum" : [ "Entreprises", "Etablissements", "Exercices" ]
+    },
+    "typePlateforme" : {
+      "required" : [ "idPlateforme", "idTechniquePlateforme" ],
+      "properties" : {
+        "typeIdPlateforme" : {
+          "type" : "string",
+          "enum" : [ "1", "2", "3", "4", "5" ]
+        },
+        "idPlateforme" : {
+          "type" : "string"
+        },
+        "idTechniquePlateforme" : {
+          "$ref" : "#/definitions/typeIdTechniquePlateforme"
+        }
+      }
+    },
+    "siretIdType" : {
+      "type" : "string",
+      "minLength" : 14,
+      "maxLength" : 14,
+      "pattern" : "^[0-9]{14,14}$"
+    },
+    "typeDonnees" : {
+      "type" : "string",
+      "enum" : [ "1", "2" ]
+    }
+  }
+}

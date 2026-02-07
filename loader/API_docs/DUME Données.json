@@ -1,0 +1,147 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "description" : "API Données. . \n\nLa description des API DUME est disponible sur la [communauté Chorus Pro](https://communaute.chorus-pro.gouv.fr/documentation/dume-presentation-des-api-a-destination-des-profils-dacheteur/).'",
+    "version" : "1.0.0",
+    "title" : "DUME Données"
+  },
+  "host" : "sandbox-api.piste.gouv.fr",
+  "basePath" : "/qlf/dume/donnees",
+  "tags" : [ {
+    "name" : "dume-resources",
+    "description" : "DUME API"
+  } ],
+  "schemes" : [ "https", "http" ],
+  "security" : [ {
+    "SecurityProfile.OAuthApplication" : [ "openid" ]
+  } ],
+  "paths" : {
+    "/" : {
+      "post" : {
+        "tags" : [ "dume-resources" ],
+        "summary" : "récupérer données entreprise OE",
+        "description" : "Operation :  \n. Entreprises,  \n. Etablissements,  \n. Exercices, \n\nDocumentation :   https://api.apientreprise.fr/documentation\n\n\n\nDonneesOERequest",
+        "operationId" : "recupererDonneesOEUsingPOST",
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json;charset=UTF-8" ],
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "request",
+          "description" : "request",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/definitions/DonneesOERequest"
+          }
+        }, {
+          "name" : "X-Api-Version",
+          "in" : "header",
+          "description" : "X-Api-Version (1 ou 2)",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "schema" : {
+              "type" : "object",
+              "additionalProperties" : {
+                "type" : "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "SecurityProfile.OAuthApplication" : {
+      "description" : "OAuth",
+      "type" : "oauth2",
+      "tokenUrl" : "https://sandbox-oauth.piste.gouv.fr/api/oauth/token",
+      "flow" : "application",
+      "scopes" : {
+        "openid" : ""
+      }
+    }
+  },
+  "definitions" : {
+    "typeIdTechniquePlateforme" : {
+      "type" : "string",
+      "minLength" : 6,
+      "maxLength" : 6
+    },
+    "MinimalRequest" : {
+      "type" : "object",
+      "required" : [ "operation" ],
+      "discriminator" : "operation",
+      "properties" : {
+        "operation" : {
+          "type" : "string"
+        }
+      }
+    },
+    "DonneesOERequest" : {
+      "allOf" : [ {
+        "$ref" : "#/definitions/MinimalRequest"
+      }, {
+        "type" : "object",
+        "required" : [ "plateforme", "service", "siretId", "typeDonnees" ],
+        "properties" : {
+          "siretId" : {
+            "$ref" : "#/definitions/siretIdType"
+          },
+          "service" : {
+            "$ref" : "#/definitions/service"
+          },
+          "typeDonnees" : {
+            "$ref" : "#/definitions/typeDonnees"
+          },
+          "plateforme" : {
+            "$ref" : "#/definitions/typePlateforme"
+          }
+        },
+        "example" : {
+          "operation" : "recupererDonneesOE",
+          "siretId" : "13001977100018",
+          "service" : "Entreprises",
+          "typeDonnees" : "1",
+          "plateforme" : {
+            "typeIdPlateforme" : "1",
+            "idPlateforme" : "12345678901011",
+            "idTechniquePlateforme" : "AAA001"
+          }
+        }
+      } ],
+      "description" : "Récupération des données pour OE"
+    },
+    "service" : {
+      "type" : "string",
+      "enum" : [ "Entreprises", "Etablissements", "Exercices" ]
+    },
+    "typePlateforme" : {
+      "required" : [ "idPlateforme", "idTechniquePlateforme" ],
+      "properties" : {
+        "typeIdPlateforme" : {
+          "type" : "string",
+          "enum" : [ "1", "2", "3", "4", "5" ]
+        },
+        "idPlateforme" : {
+          "type" : "string"
+        },
+        "idTechniquePlateforme" : {
+          "$ref" : "#/definitions/typeIdTechniquePlateforme"
+        }
+      }
+    },
+    "siretIdType" : {
+      "type" : "string",
+      "minLength" : 14,
+      "maxLength" : 14,
+      "pattern" : "^[0-9]{14,14}$"
+    },
+    "typeDonnees" : {
+      "type" : "string",
+      "enum" : [ "1", "2" ]
+    }
+  }
+}

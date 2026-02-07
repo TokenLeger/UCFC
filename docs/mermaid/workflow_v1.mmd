@@ -1,0 +1,9 @@
+flowchart TD
+  Q["Question utilisateur"] --> S["Qualification (impot, periode, regime, Corse?)"]
+  S --> R["Recherche hybride (lexical + vecteur)"]
+  R --> X["Extraction des passages cites"]
+  X --> V{ "Couverture 100% ?" }
+  V -- Oui --> A["Reponse avec citations par phrase"]
+  V -- Non --> I["Je ne sais pas + explication"]
+  A --> L["Journalisation usage (sans donnees sensibles)"]
+  I --> L
